@@ -2,7 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Ridgeline" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <title>Ridgeline</title>
     <link rel="stylesheet" href="./src/style.css" />
   </head>
@@ -11,6 +17,7 @@
       <canvas id="view"></canvas>
       <canvas id="hud"></canvas>
       <div id="card" class="hidden"></div>
+      <div id="rotate">Turn your iPad sideways to play</div>
       <div id="loading">
         <div class="title">RIDGELINE</div>
         <div class="bar"><div id="progress"></div></div>

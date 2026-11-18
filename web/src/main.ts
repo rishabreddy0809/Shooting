@@ -4,6 +4,7 @@ import { loadAll, prototype } from "./assets";
 import { GameAudio } from "./audio";
 import { Game, Input, type Quality } from "./game";
 import { HUD, renderCard } from "./hud";
+import { isTouchDevice, TouchControls } from "./touch";
 import { World } from "./world";
 
 // Fast ray casts against the soldiers' body parts.
@@ -85,10 +86,25 @@ async function start() {
   // MARK: Input
 
   const locked = () => document.pointerLockElement === view;
-  const showCard = () => renderCard(card, { mode: game.mode, kills: game.snapshot().kills, headshots: game.snapshot().headshots, longest: game.snapshot().longest });
+  // Touch screens (iPad, phones) have no pointer lock: on-screen controls drive the same Input.
+  let pausedAt = 0;
+  const touch = isTouchDevice() && !params.has("mouse")
+    ? new TouchControls(input, { slotAt: (x, y) => hud.slotAt(x, y), onPause: () => { pausedAt = performance.now(); game.pause(); showCard(); } })
+    : null;
+  if (touch) document.getElementById("game")!.insertBefore(touch.root, card);
+  const showCard = () => {
+    renderCard(card, { mode: game.mode, kills: game.snapshot().kills, headshots: game.snapshot().headshots, longest: game.snapshot().longest }, !!touch);
+    touch?.show(game.mode === "playing");
+  };
   showCard();
   card.addEventListener("click", () => {
     audio.resume();
+    if (touch) {
+      if (performance.now() - pausedAt < 400) return;
+      game.begin();
+      showCard();
+      return;
+    }
     const p = view.requestPointerLock({ unadjustedMovement: true }) as unknown as Promise<void> | undefined;
     // Not every browser supports raw mouse input; fall back to the default.
     p?.catch?.(() => view.requestPointerLock());
@@ -99,21 +115,28 @@ async function start() {
     showCard();
   });
   game.onDown = () => {
-    document.exitPointerLock();
+    if (document.pointerLockElement) document.exitPointerLock();
     showCard();
   };
   window.addEventListener("keydown", (e) => {
     if (["Space", "ArrowUp", "ArrowDown", "Tab"].includes(e.code)) e.preventDefault();
-    if (!locked() && !params.has("demo")) return;
+    if (!locked() && !params.has("demo") && !(touch && game.mode === "playing")) return;
     if (!e.repeat) input.pressed.add(e.code);
     input.keys.add(e.code);
     if (e.code === "KeyP" && !e.repeat) perf = !perf;
   });
   window.addEventListener("keyup", (e) => input.keys.delete(e.code));
+  // Switching apps or locking the iPad pauses, and lets go of anything held down.
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && touch && game.mode === "playing") { game.pause(); showCard(); }
+  });
+  // Safari's pinch-to-zoom would otherwise fight two-finger play.
+  for (const ev of ["gesturestart", "gesturechange", "dblclick"]) document.addEventListener(ev, (e) => e.preventDefault());
   window.addEventListener("blur", () => {
     input.keys.clear();
     input.fireDown = false;
     input.adsDown = false;
+    touch?.reset();
   });
   view.addEventListener("mousemove", (e) => {
     if (!locked()) return;
@@ -161,7 +184,9 @@ async function start() {
         : null;
       frames = 0; acc = 0; updateMs = 0;
     }
-    hud.draw(game.snapshot());
+    const snap = game.snapshot();
+    hud.draw(snap);
+    touch?.sync(snap);
   };
   requestAnimationFrame(loop);
 

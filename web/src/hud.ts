@@ -65,9 +65,19 @@ export class HUD {
   private w = 0;
   private h = 0;
   map: HTMLCanvasElement | null = null;
+  /** Where the weapon slot bar was last drawn, for tapping it on touch screens. */
+  slotBar = { x: 0, top: 0, bottom: 0, sw: 62, gap: 5, n: 0 };
 
   constructor(private canvas: HTMLCanvasElement) {
     this.g = canvas.getContext("2d")!;
+  }
+
+  /** The weapon slot under a screen point, if any. */
+  slotAt(x: number, y: number): number | null {
+    const b = this.slotBar;
+    if (y < b.top - 8 || y > b.bottom + 8 || x < b.x) return null;
+    const i = Math.floor((x - b.x) / (b.sw + b.gap));
+    return i >= 0 && i < b.n ? i : null;
   }
 
   resize(w: number, h: number) {
@@ -491,6 +501,7 @@ export class HUD {
     const n = s.slots.length;
     const sw = 62, gap = 5;
     let sx = right - n * sw - (n - 1) * gap;
+    this.slotBar = { x: sx, top: slotBottom - 44, bottom: slotBottom, sw, gap, n };
     for (let i = 0; i < n; i++) {
       const slot = s.slots[i];
       const selected = i === s.currentSlot;
@@ -624,23 +635,33 @@ const CONTROLS: [string, string][] = [
   ["G / P", "Graphics quality · performance stats"], ["Esc", "Release the cursor"],
 ];
 
-export function renderCard(el: HTMLElement, s: { mode: Mode; kills: number; headshots: number; longest: number }) {
+const TOUCH_CONTROLS: [string, string][] = [
+  ["Left side", "Drag to move · push all the way up to sprint"],
+  ["Right side", "Drag to look"], ["FIRE", "Hold to shoot · drag it to aim while firing"],
+  ["AIM", "Look through the optic (tap again to lower)"], ["HOLD BREATH", "Steady the scope while aiming"],
+  ["＋ / −", "Scope magnification"], ["ZERO ▲ / ▼", "Scope zero 100–600 m"],
+  ["SWAP / slots", "Next gun, or tap a slot"], ["PICK UP", "Take the gun at your feet"],
+  ["GFX", "Graphics quality"], ["❚❚", "Pause"],
+];
+
+export function renderCard(el: HTMLElement, s: { mode: Mode; kills: number; headshots: number; longest: number }, touch = false) {
+  const verb = touch ? "Tap" : "Click";
   let title = "", sub: string | null = null, prompt = "", controls = true;
   switch (s.mode) {
     case "ready":
-      title = "RIDGELINE"; sub = "Long-range overwatch above a hostile outpost"; prompt = "Click to deploy"; break;
+      title = "RIDGELINE"; sub = "Long-range overwatch above a hostile outpost"; prompt = `${verb} to deploy`; break;
     case "paused":
-      title = "PAUSED"; prompt = "Click to resume"; break;
+      title = "PAUSED"; prompt = `${verb} to resume`; break;
     case "down":
       title = "YOU ARE DOWN";
       sub = `${s.kills} hostiles down · ${s.headshots} headshots · longest ${Math.floor(s.longest)} m`;
-      prompt = "Click to redeploy"; controls = false; break;
+      prompt = `${verb} to redeploy`; controls = false; break;
     case "playing":
       el.classList.add("hidden");
       return;
   }
   const rows = controls
-    ? `<hr>${CONTROLS.map(([k, a]) => `<div class="row"><div class="key">${k}</div><div class="act">${a}</div></div>`).join("")}`
+    ? `<hr>${(touch ? TOUCH_CONTROLS : CONTROLS).map(([k, a]) => `<div class="row"><div class="key">${k}</div><div class="act">${a}</div></div>`).join("")}`
     : "";
   el.innerHTML = `<div class="panel"><h1>${title}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}${rows}<hr><div class="prompt">${prompt.toUpperCase()}</div></div>`;
   el.classList.remove("hidden");
