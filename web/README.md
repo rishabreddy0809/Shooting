@@ -10,7 +10,7 @@ npm run build      # static site in dist/ (any static host; relative paths)
 
 Touch screens (iPad, phones) get on-screen controls automatically: drag the left side to move, the right side
 to look, and use the buttons for fire, aim, reload and the rest (`src/touch.ts`). Add `?mouse` to force mouse
-and keyboard instead. Pushes to `main` deploy to Vercel (`vercel.json` at the repo root builds `web/`).
+and keyboard instead. Pushes to `main` deploy to Vercel (project root directory: `web`).
 On an iPad, open the Vercel URL in Safari, hold it sideways, and use Share → Add to Home Screen to
 play full screen. Touch devices load lighter textures and start at low quality to stay inside
 Safari's per-tab memory limit; add `?lowmem` to try that on a desktop.
