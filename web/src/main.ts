@@ -70,6 +70,8 @@ async function start() {
   game.onQuality = applyQuality;
   const q = params.get("quality");
   if (q === "low" || q === "medium" || q === "high") game.quality = q;
+  // Tablets start light so the tab stays within Safari's memory limit; GFX raises it.
+  else if (isTouchDevice()) game.quality = "low";
   applyQuality(game.quality);
   window.addEventListener("resize", resize);
 
