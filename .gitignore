@@ -1,0 +1,15 @@
+# Xcode / build output
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+# Blender autosaves
+*.blend1
+# Web
+web/node_modules/
+web/dist/
+web/.vercel/
+.vercel/
+# Misc
+.DS_Store
+graphify-out/
